@@ -1,16 +1,26 @@
 package com.erika;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.List;
+
+import java.util.*;
+
 import javax.servlet.annotation.WebServlet;
 
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.TextField;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.VerticalLayout;
+import com.vaadin.shared.ui.Connect;
+import com.vaadin.ui.Layout;
+import com.vaadin.ui.*;
+import com.vaadin.server.communication.*;
+import com.vaadin.data.util.*;
+
 
 /**
  * This UI is the application entry point. A UI may either represent a browser window 
@@ -22,9 +32,29 @@ import com.vaadin.ui.VerticalLayout;
 @Theme("mytheme")
 public class MyUI extends UI {
 
+    Connection connection = null;  
     @Override
     protected void init(VaadinRequest vaadinRequest) {
+
         final VerticalLayout layout = new VerticalLayout();
+
+        // Create the connection object
+    
+    String connectionString = "jdbc:sqlserver://partybookingserver.database.windows.net:1433;database=PartyBookingDB;user=host@partybookingserver;password=MaitreD99;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;;";
+	
+    try 
+{
+	// Connect with JDBC driver to a database
+	connection = DriverManager.getConnection(connectionString);
+	// Add a label to the web app with the message and name of the database we connected to 
+	layout.addComponent(new Label("Connected to database: " + connection.getCatalog()));
+} 
+catch (Exception e) 
+{
+	// This will show an error message if something went wrong
+	layout.addComponent(new Label(e.getMessage()));
+}
+       
         
         final TextField name = new TextField();
         name.setCaption("Type your name here:");
@@ -34,7 +64,8 @@ public class MyUI extends UI {
             layout.addComponent(new Label("Thanks " + name.getValue() 
                     + ", it works!"));
         });
-        
+   
+  
         layout.addComponents(name, button);
         
         setContent(layout);
@@ -45,3 +76,4 @@ public class MyUI extends UI {
     public static class MyUIServlet extends VaadinServlet {
     }
 }
+
