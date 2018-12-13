@@ -111,7 +111,7 @@ public class MyUI extends UI {
     myGrid.addSelectionListener(event -> {
 
         Notification.show(select.getValue().stream().map(Room::getRoomName).collect(Collectors.joining(","))
-                + " were selected");
+                + " selected");
         
     });
 
