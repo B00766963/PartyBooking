@@ -79,13 +79,13 @@ public class MyUI extends UI {
     
     try {
         connection = DriverManager.getConnection(connectionString);
-        ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM rmBooking;");
+        ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM Room;");
         List<Room> rm = new ArrayList<Room>();
 
         // While there are more records in the resultset
         while (rs.next()) {
             rm.add(new Room(rs.getString("room"), rs.getInt("capacity"), rs.getString("feature"),
-                    rs.getString("Alcohol_allowed")));
+                    rs.getString("alcoholAllowed")));
         }
         // Set the items (List)
         myGrid.setItems(rm);
