@@ -1,25 +1,29 @@
 package com.erika;
 
+import java.util.*;
+import java.util.stream.Collectors;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Time;
-import java.util.ArrayList;
-import java.util.List;
-
-import java.util.*;
-
 import javax.servlet.annotation.WebServlet;
-
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
-import com.vaadin.shared.ui.Connect;
-import com.vaadin.ui.Layout;
-import com.vaadin.ui.*;
-import com.vaadin.server.communication.*;
-import com.vaadin.data.util.*;
+import com.vaadin.shared.ui.ContentMode;
+import com.vaadin.shared.ui.slider.SliderOrientation;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.ComboBox;
+import com.vaadin.ui.Grid;
+import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.MultiSelect;
+import com.vaadin.ui.Notification;
+import com.vaadin.ui.Slider;
+import com.vaadin.ui.TextField;
+import com.vaadin.ui.UI;
+import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Grid.SelectionMode;
 
 
 /**
@@ -31,45 +35,118 @@ import com.vaadin.data.util.*;
  */
 @Theme("mytheme")
 public class MyUI extends UI {
-
-    Connection connection = null;  
+    
     @Override
     protected void init(VaadinRequest vaadinRequest) {
 
+        //Declare layout objects
+        final HorizontalLayout horizontalLayout = new HorizontalLayout();
         final VerticalLayout layout = new VerticalLayout();
 
-        // Create the connection object
-    
-    String connectionString = "jdbc:sqlserver://partybookingserver.database.windows.net:1433;database=PartyBookingDB;user=host@partybookingserver;password=MaitreD99;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;;";
-	
-    try 
-{
-	// Connect with JDBC driver to a database
-	connection = DriverManager.getConnection(connectionString);
-	// Add a label to the web app with the message and name of the database we connected to 
-	layout.addComponent(new Label("Connected to database: " + connection.getCatalog()));
-} 
-catch (Exception e) 
-{
-	// This will show an error message if something went wrong
-	layout.addComponent(new Label(e.getMessage()));
-}
-       
-        
-        final TextField name = new TextField();
-        name.setCaption("Type your name here:");
+        //Declare Grid
+        Grid<Room> myGrid = new Grid<>();
+        myGrid.setWidth("1200px");
 
-        Button button = new Button("Testing, Testing, 1 2 3...");
-        button.addClickListener(e -> {
-            layout.addComponent(new Label("Thanks " + name.getValue() 
-                    + ", it works!"));
-        });
-   
-  
-        layout.addComponents(name, button);
+        //Declare variables
+        Label headline = new Label(
+            "<H1>Marty Party Planners</H1> <p/> <h3>Please enter the details below and click Book</h3>");
+    headline.setContentMode(com.vaadin.shared.ui.ContentMode.HTML);
+
+    final TextField name = new TextField();
+    name.setCaption("Name of Party");
+
+    Slider people = new Slider(0, 200);
+    people.setCaption("How many people are invited to this party?");
+    people.setOrientation(SliderOrientation.HORIZONTAL);
+    people.setWidth("500px");
+    Button button = new Button("Click to Book");
+    final Label vertvalue = new Label();
+
+    ComboBox<String> comboBox = new ComboBox<>("Children attending?");
+        comboBox.setItems("Yes", "No");
+
+    //  Set ???  EBr to update this
+    people.addValueChangeListener(event -> {
+        int value = event.getValue().intValue();
+        vertvalue.setValue(String.valueOf(value));
+    });
+
+        // Create the connection object
+        Connection connection = null;  
         
-        setContent(layout);
+        //Set up the connection string to the Azure db:
+    String connectionString = "jdbc:sqlserver://partybookingserver.database.windows.net:1433;database=PartyBookingDB;user=host@partybookingserver;password=MaitreD99;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;;";
+    
+    try {
+        connection = DriverManager.getConnection(connectionString);
+        ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM rmBooking;");
+        List<Room> rm = new ArrayList<Room>();
+
+        // While there are more records in the resultset
+        while (rs.next()) {
+            rm.add(new Room(rs.getString("room"), rs.getInt("capacity"), rs.getString("feature"),
+                    rs.getString("Alcohol_allowed")));
+        }
+        // Set the items (List)
+        myGrid.setItems(rm);
+        // Configure the order and the caption of the grid
+        myGrid.addColumn(Room::getRoomName).setCaption("Room");
+        myGrid.addColumn(Room::getCapacity).setCaption("Capacity");
+        myGrid.addColumn(Room::getFeature).setCaption("Feature");
+        myGrid.addColumn(Room::getAlcohol).setCaption("Alcohol Allowed?");
+
+    } catch (Exception e) {
+        // This will show an error message if something went wrong
+        layout.addComponent(new Label(e.getMessage()));
     }
+       
+    Label message = new Label();
+    message.setValue("Your party is not booked yet");
+    message.setContentMode(ContentMode.HTML);
+
+    
+    myGrid.setSelectionMode(SelectionMode.MULTI);
+    MultiSelect<Room> select = myGrid.asMultiSelect();
+    myGrid.addSelectionListener(event -> {
+
+        Notification.show(select.getValue().stream().map(Room::getRoomName).collect(Collectors.joining(","))
+                + " were selected");
+        
+    });
+
+
+    button.addClickListener(e -> {
+        String aString = select.getValue().stream().map(Room::getAlcohol).collect(Collectors.joining(","));
+        int cap = select.getValue().stream().mapToInt(Room::getCapacity).sum();
+        message.setValue(String.valueOf(cap));
+        String match = "true";
+
+        if (myGrid.getSelectedItems().size() == 0) {
+            message.setValue("<strong>Please select at least one room!</strong>");
+        } else if (name.isEmpty()) {
+            message.setValue("<strong>Please enter party name.</strong>");
+        } else if (comboBox.isEmpty()) {
+            message.setValue("<strong>Please confirm if children attending your party</strong>");
+        } else if ((comboBox.getValue() == "Yes") && (aString.equalsIgnoreCase(match))) {
+            message.setValue(
+                    "<strong>You cannot select any rooms serving alcohol if children are attending.</strong>");
+        } else if (people.getValue().intValue() > cap) {
+            message.setValue("<strong>You have selected rooms with a max capacity of " + cap
+                    + " which is not enough to hold </strong>" + people.getValue().intValue());
+        } else {
+            message.setValue("<strong>Success! The party is booked now</strong>");
+        }
+
+    });
+    layout.addComponent(headline);
+    horizontalLayout.addComponents(name, people, comboBox);
+    layout.addComponent(horizontalLayout);
+    layout.addComponent(button);
+
+    layout.addComponent(message);
+    layout.addComponent(myGrid);
+    setContent(layout);
+}
 
     @WebServlet(urlPatterns = "/*", name = "MyUIServlet", asyncSupported = true)
     @VaadinServletConfiguration(ui = MyUI.class, productionMode = false)
