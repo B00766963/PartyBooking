@@ -56,6 +56,7 @@ public class MyUI extends UI {
     name.setCaption("Name of Party");
 
     Slider people = new Slider(0, 200);
+    people.setValue(100.0);
     people.setCaption("How many people are invited to this party?");
     people.setOrientation(SliderOrientation.HORIZONTAL);
     people.setWidth("500px");
@@ -138,6 +139,10 @@ public class MyUI extends UI {
         }
 
     });
+
+    // Student Number label
+    Label studentNumber = new Label("B00766963");
+
     layout.addComponent(headline);
     horizontalLayout.addComponents(name, people, comboBox);
     layout.addComponent(horizontalLayout);
@@ -145,6 +150,7 @@ public class MyUI extends UI {
 
     layout.addComponent(message);
     layout.addComponent(myGrid);
+    layout.addComponent(studentNumber);
     setContent(layout);
 }
 
